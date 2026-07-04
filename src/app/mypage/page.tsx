@@ -7,16 +7,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { 
-  Compass, 
-  BookOpen, 
-  User, 
-  Mail, 
-  Calendar, 
-  BarChart3, 
-  Bookmark, 
-  Brain, 
-  Palette, 
+import {
+  Compass,
+  BookOpen,
+  User,
+  Mail,
+  Calendar,
+  BarChart3,
+  Bookmark,
+  Brain,
+  Palette,
   Dumbbell,
   Lightbulb
 } from "lucide-react";
@@ -180,22 +180,20 @@ export default function MyPage() {
         <div className="w-full max-w-md bg-neutral-200/50 p-1 rounded-2xl grid grid-cols-2">
           <button
             onClick={() => setActiveTab("bookmarks")}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${
-              activeTab === "bookmarks"
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === "bookmarks"
                 ? "bg-white shadow-xs text-neutral-900 font-bold"
                 : "text-neutral-500 hover:text-neutral-950 font-semibold"
-            }`}
+              }`}
           >
             <Bookmark className="w-4 h-4" />
             <span>북마크 ({totalCount})</span>
           </button>
           <button
             onClick={() => setActiveTab("stats")}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${
-              activeTab === "stats"
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === "stats"
                 ? "bg-white shadow-xs text-neutral-900 font-bold"
                 : "text-neutral-500 hover:text-neutral-950 font-semibold"
-            }`}
+              }`}
           >
             <BarChart3 className="w-4 h-4" />
             <span>통계</span>
