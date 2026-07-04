@@ -1,168 +1,147 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Github, Copy, Sparkles } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { HOBBIES } from "@/features/hobbies/constants/hobby-list";
+import HobbyGrid from "@/features/hobbies/components/hobby-grid";
 
-const PACKAGE_NAME = '@easynext/cli';
-const CURRENT_VERSION = 'v0.1.38';
+type CategoryType = "all" | "sports" | "intelligence" | "art";
 
-function latestVersion(packageName: string) {
-  return axios
-    .get('https://registry.npmjs.org/' + packageName + '/latest')
-    .then((res) => res.data.version);
+interface CategoryFilterItem {
+  id: CategoryType;
+  label: string;
 }
+
+const CATEGORIES: CategoryFilterItem[] = [
+  { id: "all", label: "전체 보기" },
+  { id: "sports", label: "운동형" },
+  { id: "intelligence", label: "지능형" },
+  { id: "art", label: "예술형" },
+];
+
+const heroVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      staggerChildren: 0.15,
+      duration: 0.6,
+      ease: "easeOut",
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function Home() {
-  const { toast } = useToast();
-  const [latest, setLatest] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+  const [activeCategory, setActiveCategory] = useState<CategoryType>("all");
 
-  useEffect(() => {
-    const fetchLatestVersion = async () => {
-      try {
-        const version = await latestVersion(PACKAGE_NAME);
-        setLatest(`v${version}`);
-      } catch (error) {
-        console.error('Failed to fetch version info:', error);
-      }
-    };
-    fetchLatestVersion();
-  }, []);
+  // 사용자의 북마크 목록 조회 쿼리
+  const { data: bookmarkedHobbyIds = [] } = useQuery<string[]>({
+    queryKey: ["bookmarks"],
+    queryFn: async () => {
+      const response = await axios.get("/api/bookmarks");
+      return response.data.hobbyIds;
+    },
+    enabled: !!session,
+    initialData: [],
+  });
 
-  const handleCopyCommand = () => {
-    navigator.clipboard.writeText(`npm install -g ${PACKAGE_NAME}@latest`);
-    toast({
-      description: 'Update command copied to clipboard',
-    });
+  // 북마크 토글 뮤테이션
+  const toggleBookmarkMutation = useMutation({
+    mutationFn: async (hobbyId: string) => {
+      await axios.post("/api/bookmarks", { hobbyId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    },
+  });
+
+  const handleToggleBookmark = async (hobbyId: string) => {
+    await toggleBookmarkMutation.mutateAsync(hobbyId);
   };
 
-  const needsUpdate = latest && latest !== CURRENT_VERSION;
+  // 카테고리 필터링 적용
+  const filteredHobbies = HOBBIES.filter((hobby) => {
+    if (activeCategory === "all") return true;
+    return hobby.category === activeCategory;
+  });
 
   return (
-    <div className="flex min-h-screen relative overflow-hidden">
-      {/* Main Content */}
-      <div className="min-h-screen flex bg-gray-100">
-        <div className="flex flex-col p-5 md:p-8 space-y-4">
-          <h1 className="text-3xl md:text-5xl font-semibold tracking-tighter !leading-tight text-left">
-            Easiest way to start
-            <br /> Next.js project
-            <br /> with Cursor
-          </h1>
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Hero 섹션 */}
+      <motion.section
+        variants={heroVariants}
+        initial="hidden"
+        animate="visible"
+        className="px-6 py-12 md:px-20 md:py-20 max-w-7xl mx-auto w-full flex flex-col space-y-4"
+      >
+        <motion.h1
+          variants={itemVariants}
+          className="text-4xl md:text-5xl font-extrabold tracking-tight text-neutral-900 leading-tight md:leading-none"
+        >
+          나만의 특별한 취미를 찾아보세요
+        </motion.h1>
+        <motion.p
+          variants={itemVariants}
+          className="text-lg md:text-xl text-neutral-500 max-w-2xl font-light"
+        >
+          HobbyFind에서 당신의 성향에 맞는 새로운 일상을 가볍게 둘러보고 탐색해보세요.
+        </motion.p>
+      </motion.section>
 
-          <p className="text-lg text-muted-foreground">
-            Get Pro-created Next.js bootstrap just in seconds
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="gap-2 w-fit rounded-full px-4 py-2 border border-black"
-            >
-              <a href="https://github.com/easynextjs/easynext" target="_blank">
-                <Github className="w-4 h-4" />
-                GitHub
-              </a>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="gap-2 w-fit rounded-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white"
-            >
-              <a href="https://easynext.org/premium" target="_blank">
-                <Sparkles className="w-4 h-4" />
-                Premium
-              </a>
-            </Button>
+      {/* 카테고리 필터 영역 */}
+      <section className="sticky top-[73px] z-40 bg-white border-b border-neutral-100 w-full">
+        <div className="mx-auto max-w-7xl px-6 md:px-20">
+          <div className="flex items-center gap-8 py-4 overflow-x-auto scrollbar-none">
+            {CATEGORIES.map((category) => {
+              const isActive = activeCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`border-b-2 pb-2 text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    isActive
+                      ? "border-neutral-900 text-neutral-900"
+                      : "border-transparent text-neutral-500 hover:text-neutral-900"
+                  }`}
+                >
+                  {category.label}
+                </button>
+              );
+            })}
           </div>
-          <Section />
         </div>
-      </div>
+      </section>
 
-      <div className="min-h-screen ml-16 flex-1 flex flex-col items-center justify-center space-y-4">
-        <div className="flex flex-col items-center space-y-2">
-          <p className="text-muted-foreground">
-            Current Version: {CURRENT_VERSION}
-          </p>
-          <p className="text-muted-foreground">
-            Latest Version:{' '}
-            <span className="font-bold">{latest || 'Loading...'}</span>
-          </p>
-        </div>
-
-        {needsUpdate && (
-          <div className="flex flex-col items-center space-y-2">
-            <p className="text-yellow-600">New version available!</p>
-            <p className="text-sm text-muted-foreground">
-              Copy and run the command below to update:
-            </p>
-            <div className="relative group">
-              <pre className="bg-gray-100 p-4 rounded-lg">
-                npm install -g {PACKAGE_NAME}@latest
-              </pre>
-              <button
-                onClick={handleCopyCommand}
-                className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* 메인 콘텐츠 영역 */}
+      <main className="flex-1 bg-white">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeCategory}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3 }}
+            className="w-full"
+          >
+            <HobbyGrid
+              hobbies={filteredHobbies}
+              bookmarkedHobbyIds={bookmarkedHobbyIds}
+              onToggleBookmark={handleToggleBookmark}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
-  );
-}
-
-function Section() {
-  const items = [
-    { href: 'https://nextjs.org/', label: 'Next.js' },
-    { href: 'https://ui.shadcn.com/', label: 'shadcn/ui' },
-    { href: 'https://tailwindcss.com/', label: 'Tailwind CSS' },
-    { href: 'https://www.framer.com/motion/', label: 'framer-motion' },
-    { href: 'https://zod.dev/', label: 'zod' },
-    { href: 'https://date-fns.org/', label: 'date-fns' },
-    { href: 'https://ts-pattern.dev/', label: 'ts-pattern' },
-    { href: 'https://es-toolkit.dev/', label: 'es-toolkit' },
-    { href: 'https://zustand.docs.pmnd.rs/', label: 'zustand' },
-    { href: 'https://supabase.com/', label: 'supabase' },
-    { href: 'https://react-hook-form.com/', label: 'react-hook-form' },
-  ];
-
-  return (
-    <div className="flex flex-col py-5 md:py-8 space-y-2 opacity-75">
-      <p className="font-semibold">What&apos;s Included</p>
-
-      <div className="flex flex-col space-y-1 text-muted-foreground">
-        {items.map((item) => (
-          <SectionItem key={item.href} href={item.href}>
-            {item.label}
-          </SectionItem>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionItem({
-  children,
-  href,
-}: {
-  children: React.ReactNode;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="flex items-center gap-2 underline"
-      target="_blank"
-    >
-      <CheckCircle className="w-4 h-4" />
-      <p>{children}</p>
-    </a>
   );
 }
