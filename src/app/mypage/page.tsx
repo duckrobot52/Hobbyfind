@@ -181,8 +181,8 @@ export default function MyPage() {
           <button
             onClick={() => setActiveTab("bookmarks")}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === "bookmarks"
-                ? "bg-white shadow-xs text-neutral-900 font-bold"
-                : "text-neutral-500 hover:text-neutral-950 font-semibold"
+              ? "bg-white shadow-xs text-neutral-900 font-bold"
+              : "text-neutral-500 hover:text-neutral-950 font-semibold"
               }`}
           >
             <Bookmark className="w-4 h-4" />
@@ -191,8 +191,8 @@ export default function MyPage() {
           <button
             onClick={() => setActiveTab("stats")}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === "stats"
-                ? "bg-white shadow-xs text-neutral-900 font-bold"
-                : "text-neutral-500 hover:text-neutral-950 font-semibold"
+              ? "bg-white shadow-xs text-neutral-900 font-bold"
+              : "text-neutral-500 hover:text-neutral-950 font-semibold"
               }`}
           >
             <BarChart3 className="w-4 h-4" />
